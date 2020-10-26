@@ -143,7 +143,7 @@ void vPortStartFirstTask( void );
 portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE pxCode, void *pvParameters )
 {
 /* Should actually keep this struct on the stack. */
-xParams *pxThisThreadParams = pvPortMalloc( sizeof( xParams ) );
+xParams *pxThisThreadParams = (xParams*) pvPortMalloc( sizeof( xParams ) );
 
 	(void)pthread_once( &hSigSetupThread, prvSetupSignalsAndSchedulerPolicy );
 

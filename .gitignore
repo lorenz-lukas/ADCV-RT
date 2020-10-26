@@ -1,1 +1,4 @@
 obj/*
+TEST_data/*
+adcv4/data/outData/*
+Libs/Semaphores

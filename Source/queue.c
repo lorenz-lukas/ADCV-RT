@@ -33,9 +33,9 @@ all the API functions to use the MPU wrappers.  That should only be done when
 task.h is included from an application file. */
 #define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
 
 #if ( configUSE_CO_ROUTINES == 1 )
 	#include "croutine.h"
@@ -2767,7 +2767,7 @@ BaseType_t xReturn;
 			}
 			else
 			{
-				( ( Queue_t * ) xQueueOrSemaphore )->pxQueueSetContainer = xQueueSet;
+				( ( Queue_t * ) xQueueOrSemaphore )->pxQueueSetContainer = (QueueDefinition*)xQueueSet;
 				xReturn = pdPASS;
 			}
 		}

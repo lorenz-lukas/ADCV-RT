@@ -1,150 +1,86 @@
-######## Build options ########
+CXX=g++
+CXXFLAGS=-std=c++11
+BUILD_DIR=obj
 
-verbose = 0
+### ADCV
 
-######## Build setup ########
+ADCV_INCLUDE=adcv4
+COMMON_INCLUDE=Libs/Common
+JSON_INCLUDE=Libs/JSON/Cpp
+#SEMAPHORES_INCLUDE=Libs/Semaphores
+NETWORKING_INCLUDE=networking/tcp
 
-# SRCROOT should always be the current directory
-SRCROOT         = $(CURDIR)
+STATIC_DEPS_adcv=$(BUILD_DIR)/adcv.o $(BUILD_DIR)/connection.o $(BUILD_DIR)/server.o $(BUILD_DIR)/jsonLogging.o #$(BUILD_DIR)/semaphores.o
 
-# .o directory
-ODIR            = obj
+DYNAMIC_DEPS=-lopencv_highgui -lopencv_videoio -lopencv_core -lopencv_calib3d -lopencv_imgproc -lopencv_imgcodecs -lopencv_aruco -pthread -lrt
 
-# Source VPATHS
-VPATH           += $(SRCROOT)/Source
-VPATH	        += $(SRCROOT)/Source/portable/MemMang
-VPATH	        += $(SRCROOT)/Source/portable/GCC/POSIX
-VPATH           += $(SRCROOT)/Demo/Common
-VPATH			+= $(SRCROOT)/Project/FileIO
-VPATH			+= $(SRCROOT)/Project
+### FREERTOS
 
-# FreeRTOS Objects
-C_FILES			+= croutine.c
-C_FILES			+= event_groups.c
-C_FILES			+= list.c
-C_FILES			+= queue.c
-C_FILES			+= tasks.c
-C_FILES			+= timers.c
+f_SOURCE=Source
+f_INCLUDE=Source/include
+f_PORTABLE_MEM=Source/portable/MemMang
+f_PORTABLE_POSIX=Source/portable/GCC/POSIX
 
-# portable Objects
-C_FILES			+= heap_3.c
-C_FILES			+= port.c
+STATIC_DEPS_freeRTOS=$(BUILD_DIR)/croutine.o $(BUILD_DIR)/event_groups.o $(BUILD_DIR)/list.o $(BUILD_DIR)/queue.o $(BUILD_DIR)/tasks.o $(BUILD_DIR)/timers.o $(BUILD_DIR)/heap_3.o $(BUILD_DIR)/port.o
+f_LINUX= /usr/include/x86_64-linux-gnu/
 
-# Demo Objects
-#C_FILES			+= Minimal/blocktim.c
-#C_FILES			+= Minimal/countsem.c
-#C_FILES			+= Minimal/GenQTest.c
-#C_FILES			+= Minimal/QPeek.c
-#C_FILES			+= Minimal/recmutex.c
-#C_FILES			+= Full/BlockQ.c
-#C_FILES			+= Full/death.c
-#C_FILES			+= Full/dynamic.c
-#C_FILES			+= Full/flop.c
-#C_FILES			+= Full/integer.c
-#C_FILES			+= Full/PollQ.c
-#C_FILES			+= Full/semtest.c
-#C_FILES			+= Full/print.c
-#
-#C_FILES			+= Minimal/AbortDelay.c
-#C_FILES			+= Minimal/EventGroupsDemo.c
-#C_FILES			+= Minimal/IntSemTest.c
-#C_FILES			+= Minimal/QueueSet.c
-#C_FILES			+= Minimal/QueueSetPolling.c
-#C_FILES			+= Minimal/QueueOverwrite.c
-#C_FILES			+= Minimal/TaskNotify.c
-#C_FILES			+= Minimal/TimerDemo.c
-#
-# Main Object
-#C_FILES			+= queue_rxtx.c
-C_FILES			+= main.c
-#C_FILES			+= taskfunction.c
-# Include Paths
-INCLUDES        += -I$(SRCROOT)/Source/include
-INCLUDES        += -I$(SRCROOT)/Source/portable/GCC/POSIX/
-INCLUDES        += -I$(SRCROOT)/Project
-INCLUDES        += -I/usr/include/x86_64-linux-gnu/
-# Generate OBJS names
-OBJS = $(patsubst %.c,%.o,$(C_FILES))
+### SOURCE
 
-######## C Flags ########
+SRC=Project
 
-# Warnings
-CWARNS += -W
-CWARNS += -Wall
-CWARNS += -Wextra
-CWARNS += -Wformat
-CWARNS += -Wmissing-braces
-CWARNS += -Wno-cast-align
-CWARNS += -Wparentheses
-CWARNS += -Wshadow
-CWARNS += -Wno-sign-compare
-CWARNS += -Wswitch
-CWARNS += -Wuninitialized
-CWARNS += -Wunknown-pragmas
-CWARNS += -Wunused-function
-CWARNS += -Wunused-label
-CWARNS += -Wunused-parameter
-CWARNS += -Wunused-value
-CWARNS += -Wunused-variable
-CWARNS += -Wmissing-prototypes
+.PHONY: default buildDirectory clean main
 
-#CWARNS += -Wno-unused-function
+default: buildDirectory main	
 
-CFLAGS += -m32
-CFLAGS += -DDEBUG=1
-#CFLAGS += -g -DUSE_STDIO=1 -D__GCC_POSIX__=1
-CFLAGS += -g -UUSE_STDIO -D__GCC_POSIX__=1
-ifneq ($(shell uname), Darwin)
-CFLAGS += -pthread
-endif
+buildDirectory:
+	@mkdir -p $(BUILD_DIR)	
 
-# MAX_NUMBER_OF_TASKS = max pthreads used in the POSIX port. 
-# Default value is 64 (_POSIX_THREAD_THREADS_MAX), the minimum number required by POSIX.
-CFLAGS += -DMAX_NUMBER_OF_TASKS=300
+#############   ADCV
+$(BUILD_DIR)/adcv.o: $(ADCV_INCLUDE)/adcv.cpp
+	$(CXX) $(CXXFLAGS) -I$(ADCV_INCLUDE) -I$(COMMON_INCLUDE) -c -o $@ $^ 
+	#-I$(SEMAPHORES_INCLUDE)
 
-CFLAGS += $(INCLUDES) $(CWARNS) -O2
+$(BUILD_DIR)/connection.o: $(NETWORKING_INCLUDE)/connection.cpp
+	$(CXX) $(CXXFLAGS) -I$(NETWORKING_INCLUDE) -I$(ADCV_INCLUDE) -c -o $@ $^
 
-######## Makefile targets ########
+$(BUILD_DIR)/server.o: $(NETWORKING_INCLUDE)/server.cpp
+	$(CXX) $(CXXFLAGS) -I$(NETWORKING_INCLUDE) -I$(ADCV_INCLUDE) -c -o $@ $^
 
-# Rules
-.PHONY : all
-all: FreeRTOS-Sim
+# $(BUILD_DIR)/semaphores.o: $(SEMAPHORES_INCLUDE)/semaphores.cpp
+	# $(CXX) $(CXXFLAGS) -I$(SEMAPHORES_INCLUDE) -I$(COMMON_INCLUDE) -c -o $@ $^
 
+$(BUILD_DIR)/jsonLogging.o: $(JSON_INCLUDE)/jsonLogging.cpp
+	$(CXX) $(CXXFLAGS) -I$(JSON_INCLUDE) -I$(COMMON_INCLUDE) -c -o $@ $^
 
-# Fix to place .o files in ODIR
-_OBJS = $(patsubst %,$(ODIR)/%,$(OBJS))
+############# FREERTOS
+$(BUILD_DIR)/croutine.o: $(f_SOURCE)/croutine.c 
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
 
-$(ODIR)/%.o: %.c
-	@mkdir -p $(dir $@)
-# If verbose, print gcc execution, else hide
-ifeq ($(verbose),1)
-	@echo ">> Compiling $<"
-	$(CC) $(CFLAGS) -c -o $@ $<
-else
-	@echo ">> Compiling $(notdir $<)"
-	@$(CC) $(CFLAGS) -c -o $@ $<
-endif
+$(BUILD_DIR)/event_groups.o: $(f_SOURCE)/event_groups.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
 
-FreeRTOS-Sim: $(_OBJS)
-	@echo ">> Linking $@..."
-ifeq ($(verbose),1)
-	$(CC) $(CFLAGS) $^ $(LINKFLAGS) $(LIBS) -o $@
-else
-	@$(CC) $(CFLAGS) $^ $(LINKFLAGS) $(LIBS) -o $@
-endif
+$(BUILD_DIR)/list.o: $(f_SOURCE)/list.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
 
-	@echo "-------------------------"
-	@echo "BUILD COMPLETE: $@"
-	@echo "-------------------------"
+$(BUILD_DIR)/queue.o: $(f_SOURCE)/queue.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
 
-.PHONY : clean
+$(BUILD_DIR)/tasks.o: $(f_SOURCE)/tasks.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
+
+$(BUILD_DIR)/timers.o: $(f_SOURCE)/timers.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
+
+$(BUILD_DIR)/heap_3.o: $(f_PORTABLE_MEM)/heap_3.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_PORTABLE_MEM) -I$(f_PORTABLE_POSIX) -c -o $@ $^
+
+$(BUILD_DIR)/port.o: $(f_PORTABLE_POSIX)/port.c
+	$(CXX) $(CXXFLAGS) -I$(SRC) -I$(f_INCLUDE) -I$(f_PORTABLE_POSIX) -c -o $@ $^
+
+main: $(SRC)/main.cpp $(STATIC_DEPS_adcv) $(STATIC_DEPS_freeRTOS)
+	$(CXX) $(CXXFLAGS) -I. -I$(SRC) -I$(ADCV_INCLUDE) -I$(NETWORKING_INCLUDE) -I$(JSON_INCLUDE) -I$(COMMON_INCLUDE) -I$(f_INCLUDE) -I$(f_SOURCE) -I$(f_PORTABLE_MEM) -I$(f_PORTABLE_POSIX) -o $@ $< $(STATIC_DEPS_adcv) $(STATIC_DEPS_freeRTOS) $(DYNAMIC_DEPS)
+#-I$(SEMAPHORES_INCLUDE)
+
 clean:
-	@-rm -rf $(ODIR) FreeRTOS-Sim
-	@echo "--------------"
-	@echo "CLEAN COMPLETE"
-	@echo "--------------"
-
-
-.PHONY: valgrind
-valgrind: FreeRTOS-Sim
-	valgrind.bin --tool=memcheck --leak-check=full --show-reachable=yes --track-fds=yes ./FreeRTOS-Sim
+	@find . -maxdepth 1 -executable ! -type d -exec rm -fv '{}' \;
+	@rm -Rfv $(BUILD_DIR)
